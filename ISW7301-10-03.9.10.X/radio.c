@@ -30,15 +30,19 @@ extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStat
         receivedSync = false;
         receivedPreamble = false;
         R_LED = 1;
-                *rxBytes = 6;
-                for (uint8_t i = 0 ; i < *rxBytes; i++)
-                {
-                    *rxBuffer = pktBuffer[i];
-                    rxBuffer++;
-                }
-            __delay_ms(50);
+        *rxBytes = 6;
+        for (uint8_t i = 0 ; i < *rxBytes; i++)
+        {
+            *rxBuffer = pktBuffer[i];
+            rxBuffer++;
+        }
+        __delay_ms(50);
         R_LED = 0;
         CLRWDT();
+        
+        for (uint8_t i = 0; i < sizeof(pktBuffer); i++)
+            pktBuffer[i] = 0;           // clear everything in the buffer
+        
         return true;
     }
     else
@@ -377,8 +381,8 @@ void power_down_radio()
     disable_serial_int();
     radioState = DetectRSSI;
     receivedBit = false;
-    for (uint8_t i = 0; i < sizeof(pktBuffer); i++)
-        pktBuffer[i] = 0;           // clear everything in the buffer
+//    for (uint8_t i = 0; i < sizeof(pktBuffer); i++)
+//        pktBuffer[i] = 0;           // clear everything in the buffer
 }
 
 

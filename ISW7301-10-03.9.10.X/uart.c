@@ -18,7 +18,7 @@ void init_uart()
     TXD_IN = 0;         /* Set TX pin as output */
     
     BRGH = 1;           /* Baud = 9600 */
-    SPBRG = 50;         /* orig 25 */
+    SPBRG = 25;         /* orig 25 */
 }
 
 void start_uart()

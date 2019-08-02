@@ -142,8 +142,8 @@ void check_for_packet()
             {
                 successLED();
                 
-//                sendAck();
-//                tell_mother(rxBuffer, 6);
+                sendAck();
+                tell_mother(rxBuffer, 6);
             }
         }
         pktTimedOut = false;

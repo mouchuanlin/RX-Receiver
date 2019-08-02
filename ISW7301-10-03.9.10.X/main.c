@@ -59,6 +59,7 @@
  */
 static void initializePIC(void);
 void writePreamble(uint16_t preambleTime);
+void startup_flash();
 
 #define REVISION "A03"
 #define PREAMBLE_TIMESPAN   6000        // WOR periodicity is currently 6s
@@ -112,16 +113,10 @@ void main(void)
     unsigned char writeByte;
     unsigned char readByte;
     initializePIC();
-
-    /* START-UP FLASH */
-    R_LED = 1;
-    G_LED = 1;
-    WDTCONbits.SWDTEN = 0;
-    __delay_ms(250);
-    R_LED = 0;
-    G_LED = 0;
-    WDTCONbits.SWDTEN = 1;
     
+    /* START-UP FLASH */
+    startup_flash();
+
     initializeSPI();
     
     /* Write Radio Regs */
@@ -138,7 +133,7 @@ void main(void)
     while ((trxCmdStrobe(CC1120_SNOP) & 0x70) != 0x00)
         NOP();
     // comment for rssi
-//    trxCmdStrobe(CC1120_SPWD);
+    //trxCmdStrobe(CC1120_SPWD);
         trxCmdStrobe(CC1120_SRX);
         CLRWDT();
 //        __delay_ms(50);
@@ -167,11 +162,39 @@ void main(void)
                                     // for the instance when this timer is not advanced
                                     // during other packet reception
             WPUB4 = 1;
+            //SWDTEN = 1;
             SLEEP();
             NOP();
             WPUB4 = 0;
         }
     }
+}
+
+void startup_flash()
+{
+//    WDTCONbits.SWDTEN = 0;
+//    for (uint8_t i = 0; i < 5; i++)
+//    {
+//        R_LED = 1;
+//        G_LED = 1;
+//        WDTCONbits.SWDTEN = 0;
+//        __delay_ms(50);
+//        R_LED = 0;
+//        G_LED = 0;
+//        __delay_ms(50);
+//    }
+//    WDTCONbits.SWDTEN = 1;
+    
+    /* START-UP FLASH */
+    WDTCONbits.SWDTEN = 0;
+        
+    R_LED = 1;
+    G_LED = 1;
+    __delay_ms(500);
+    R_LED = 0;
+    G_LED = 0;
+    
+    WDTCONbits.SWDTEN = 1;
 }
 
 
@@ -202,8 +225,8 @@ static void initializePIC(void)
     
     OPTION_REG = 0b00000111;  // WPU are enabled by individ. WPU latch vals.
     APFCON0 = 0b10000100;   // RC4->USART TX , RC5->USART RX
-    
-    TRISA = 0b00111111;//00111001;
+   
+    TRISA = 0b00111011;//00111001;
     WPUA = 0b00000001;
     
     TRISB = 0b10010000;     // RB7 on GPIO2, RB4 on SDI
