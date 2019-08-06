@@ -1,3 +1,6 @@
+//
+// radio.c
+//
 
 #include <xc.h>
 #include <htc.h>
@@ -22,14 +25,14 @@ uint32_t RSSI_NTHRESH = 0x06D0;//700
 static uint32_t trssi = 0, rssi1 = 0;
 
 
-extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
+bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
 {
     if(receivedSync)
     {
         CLRWDT();
         receivedSync = false;
         receivedPreamble = false;
-        R_LED = 1;
+        //R_LED = 1;
         *rxBytes = 6;
         for (uint8_t i = 0 ; i < *rxBytes; i++)
         {
@@ -37,7 +40,7 @@ extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStat
             rxBuffer++;
         }
         __delay_ms(50);
-        R_LED = 0;
+        //R_LED = 0;
         CLRWDT();
         
         for (uint8_t i = 0; i < sizeof(pktBuffer); i++)

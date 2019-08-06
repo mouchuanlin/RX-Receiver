@@ -46,5 +46,8 @@ uint32_t ALT_PREAMBLEWORDS = 0x55555555;
 
 uint8_t pktBuffer[48] = {0};//6] = {0};
 
+
+extern void flashing_green();
+
 #endif	/* HANDLE_DATA_H */
 

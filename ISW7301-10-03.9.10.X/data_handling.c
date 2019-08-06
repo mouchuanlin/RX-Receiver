@@ -1,3 +1,6 @@
+//
+// handle_data.c
+//
 
 #include <xc.h>
 #include <stdint.h>
@@ -138,7 +141,8 @@ void check_for_packet()
     {
         if (crcOK(rxBuffer, 6))
         {
-            if (isUniqueTransmission(rxBuffer))
+            // TODO: TESTIN ONLY. Comment this this out for continuous receiving RF slave data.
+            //if (isUniqueTransmission(rxBuffer))
             {
                 successLED();
                 
@@ -164,8 +168,6 @@ void check_for_packet()
 //        INTCONbits.IOCIE = 1;
     }
 }
-
-
 
 void check_reception(uint8_t currentBit)
 {

@@ -75,13 +75,28 @@ unsigned short packetCounter = 0;
 bool toggleLED = false;
 
 void __interrupt isr()
-{
-    if (PIR1bits.RCIF)
-    {
-        PIR1bits.RCIF = 0;
-        receivedUARTChar = true;
-    }
+{   
+    uint8_t temp;
     
+    // ACK from hub - 7 bytes data in HEX - '$' + 3byte ID + 1byte status + <CR> + <LF>
+    if (!receivedACK && PIR1bits.RCIF)
+    {
+        uint8_t temp;
+
+        temp = RCREG;
+        RS232Buf[rx_cnt++] = temp;
+        
+        PIR1bits.RCIF == 0;
+        
+        if(rx_cnt > MAX_SIZE)
+            rx_cnt = 0;
+        
+        if (temp == LF)
+        {
+            rx_cnt = 0;
+            receivedACK = true;
+        }
+    }
     
     /* GPIO0 interrupt */
     if(IOCBFbits.IOCBF7)        // BF7 HERE**
@@ -106,12 +121,8 @@ void __interrupt isr()
     }
 }
 
-
-
 void main(void)
-{
-    unsigned char writeByte;
-    unsigned char readByte;
+{   
     initializePIC();
     
     /* START-UP FLASH */
@@ -142,68 +153,58 @@ void main(void)
     while ((trxCmdStrobe(CC1120_SNOP) & 0x70) != 0x00)
         NOP();
     trxCmdStrobe(CC1120_SPWD);
-    
-    
+   
     start_rssi_timer();
-    
     
     /* Inf Loop */
     while(1)
     {
         CLRWDT();
-        
         cycle_radio();
         check_for_packet();
-        
         
         if (!receivedSync && radioState == DetectRSSI)
         {
             check_packet_timer();   //4min timer will have to be lowered to compensate 
                                     // for the instance when this timer is not advanced
                                     // during other packet reception
-            WPUB4 = 1;
-            //SWDTEN = 1;
+            //WPUB4 = 1;
+            WDTCONbits.SWDTEN = 1;
+            
+            CLRWDT();
             SLEEP();
             NOP();
-            WPUB4 = 0;
+            NOP();
+            NOP();
+            
+            WDTCONbits.SWDTEN = 0;
+            //WPUB4 = 0;
         }
     }
 }
 
 void startup_flash()
 {
-//    WDTCONbits.SWDTEN = 0;
-//    for (uint8_t i = 0; i < 5; i++)
-//    {
-//        R_LED = 1;
-//        G_LED = 1;
-//        WDTCONbits.SWDTEN = 0;
-//        __delay_ms(50);
-//        R_LED = 0;
-//        G_LED = 0;
-//        __delay_ms(50);
-//    }
-//    WDTCONbits.SWDTEN = 1;
-    
-    /* START-UP FLASH */
     WDTCONbits.SWDTEN = 0;
-        
-    R_LED = 1;
-    G_LED = 1;
-    __delay_ms(500);
-    R_LED = 0;
-    G_LED = 0;
-    
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        R_LED = 1;
+        G_LED = 1;
+        //WDTCONbits.SWDTEN = 0;
+        __delay_ms(50);
+        R_LED = 0;
+        G_LED = 0;
+        __delay_ms(50);
+    }
     WDTCONbits.SWDTEN = 1;
 }
-
 
 static void initializePIC(void)
 {
     CLRWDT();
     
     // SW control WDT
-    SWDTEN = 0;
+    WDTCONbits.SWDTEN = 0;
     
    // Config WDT interval
     WDTCONbits.WDTPS = 0b00111;// 128ms    01000;         /* WDT 256ms */
@@ -248,7 +249,6 @@ static void initializePIC(void)
 //    start_uart();
 }
 
-
 void registerConfig(void) 
 {
     unsigned char writeByte;
@@ -267,7 +267,6 @@ void registerConfig(void)
         cc1120SpiWriteReg(preferredSettings[i].addr, &writeByte, 1);
     }
 }
-
 
 extern void sendAck(void)
 {
@@ -292,13 +291,12 @@ extern void sendAck(void)
     /* Calibrate */
     manualCalibration();
     calibrateRCOsc();
-    trxCmdStrobe(CC1120_SWORRST);
+    //trxCmdStrobe(CC1120_SWORRST);
     __delay_ms(10);
     /* Start WOR */
-    trxCmdStrobe(CC1120_SWOR);
+    //trxCmdStrobe(CC1120_SWOR);
     CLRWDT();
 }
-
 
 void successLED(void)
 {
@@ -310,7 +308,6 @@ void successLED(void)
     CLRWDT();
     G_LED = 0;
 }
-
 
 void check7minTimer() // delete one at a time
 {
