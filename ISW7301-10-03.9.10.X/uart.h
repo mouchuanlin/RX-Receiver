@@ -25,9 +25,10 @@ void terminate_uart();
 void tell_mother(uint8_t rxBuffer[], uint8_t numBytes);
 void wakeup_GSM_and_send_header(uint8_t headerByte);
 void enable_RX_uart_interrupt();
-void write_uart(unsigned char data);
+void write_uart(uint8_t data);
 void flashing_red();
 void flashing_green();
+bool check_ACK_data(uint8_t rxBuffer[]);
 
 #define MAX_SIZE 7
 volatile bool receivedACK = false;

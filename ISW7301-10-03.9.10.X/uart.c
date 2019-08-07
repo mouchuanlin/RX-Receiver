@@ -66,7 +66,7 @@ void terminate_uart()
     WDTCONbits.SWDTEN = 1;
 }
 
-void construct_uart_packet(uint8_t rxBuffer[], uint8_t numBytes, unsigned char txBuffer[])
+void construct_uart_packet(uint8_t rxBuffer[], uint8_t numBytes, uint8_t txBuffer[])
 {
     /* For adapting to current hub software with two chips */
     txBuffer[0] = '$';
@@ -123,25 +123,22 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
             __delay_ms(1);
             counter++;
             
+            // ACk flag set in isr() - ACK from hub - 7 bytes data in HEX - '$' + 3byte ID + 1byte status + <CR> + <LF> 
             if (receivedACK)
                 break;
         }
         
         disable_RX_uart_interrupt();
         
-        if (receivedACK)
+        if (receivedACK && check_ACK_data(rxBuffer))
         {
-            if(RS232Buf[1] == rxBuffer[0] && RS232Buf[2] == rxBuffer[1] \
-                    && RS232Buf[3] == rxBuffer[2] && RS232Buf[4] == rxBuffer[3])
-            {
-                //R_LED = 1;               
-                CLRWDT();
-                __delay_ms(100);
-                CLRWDT();
-                __delay_ms(100);
-                CLRWDT();                
-                //R_LED = 0;
-            }
+            //R_LED = 1;               
+            CLRWDT();
+            __delay_ms(100);
+            CLRWDT();
+            __delay_ms(100);
+            CLRWDT();                
+            //R_LED = 0;
         }
         else
         {
@@ -185,9 +182,25 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
     terminate_uart();
 }
 
-void write_uart(unsigned char data)
+bool check_ACK_data(uint8_t rxBuffer[])
+{    
+    // 7 bytes data in HEX - $ + 3byte ID + 1byte status + <CR> + <LF>  
+    if ((RS232Buf[0] == '$') && (RS232Buf[5] == CR) && (RS232Buf[6] == LF) &&
+            (RS232Buf[1] == rxBuffer[0]) && 
+            (RS232Buf[2] == rxBuffer[1]) &&
+            (RS232Buf[3] == rxBuffer[2]) && 
+            (RS232Buf[4] == rxBuffer[3]))
+        return true;
+    else
+        return false;
+}
+
+void write_uart(uint8_t data)
 {
-    while (!TRMT);              // Wait for UART TX buffer to empty completely
+    // Wait for UART TX buffer to empty completely
+    while (!TRMT)
+        ;         
+    
     TXREG = data;
 }
 
@@ -196,10 +209,10 @@ void flashing_red()
     //WDTCONbits.SWDTEN = 0;
     for (uint8_t i = 0; i < 10; i++)
     {
-        R_LED = 1;
+        R_LED_ON;
         //WDTCONbits.SWDTEN = 0;
         __delay_ms(10);
-        R_LED = 0;
+        R_LED_OFF;
     }
     //WDTCONbits.SWDTEN = 1;
 }
@@ -209,10 +222,10 @@ void flashing_green()
     //WDTCONbits.SWDTEN = 0;
     for (uint8_t i = 0; i < 10; i++)
     {
-        G_LED = 1;
+        G_LED_ON;
         //WDTCONbits.SWDTEN = 0;
         __delay_ms(10);
-        G_LED = 0;
+        G_LED_OFF;
     }
     //WDTCONbits.SWDTEN = 1;
 }

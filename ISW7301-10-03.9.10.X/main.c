@@ -68,12 +68,6 @@ void startup_flash();
  * VARIABLES
  */
 
-volatile unsigned char TempScale;
-volatile bit io_change;
-unsigned short packetCounter = 0;
-
-bool toggleLED = false;
-
 void __interrupt isr()
 {   
     uint8_t temp;
@@ -81,8 +75,6 @@ void __interrupt isr()
     // ACK from hub - 7 bytes data in HEX - '$' + 3byte ID + 1byte status + <CR> + <LF>
     if (!receivedACK && PIR1bits.RCIF)
     {
-        uint8_t temp;
-
         temp = RCREG;
         RS232Buf[rx_cnt++] = temp;
         
@@ -163,6 +155,9 @@ void main(void)
         cycle_radio();
         check_for_packet();
         
+        if (_7minTimerOn)
+            check7minTimer();
+        
         if (!receivedSync && radioState == DetectRSSI)
         {
             check_packet_timer();   //4min timer will have to be lowered to compensate 
@@ -188,13 +183,14 @@ void startup_flash()
     WDTCONbits.SWDTEN = 0;
     for (uint8_t i = 0; i < 5; i++)
     {
-        R_LED = 1;
-        G_LED = 1;
         //WDTCONbits.SWDTEN = 0;
+        R_LED_ON;
+        G_LED_ON;
         __delay_ms(50);
-        R_LED = 0;
-        G_LED = 0;
+        R_LED_OFF;
+        G_LED_OFF;   
         __delay_ms(50);
+        
     }
     WDTCONbits.SWDTEN = 1;
 }
@@ -207,7 +203,7 @@ static void initializePIC(void)
     WDTCONbits.SWDTEN = 0;
     
    // Config WDT interval
-    WDTCONbits.WDTPS = 0b00111;// 128ms    01000;         /* WDT 256ms */
+    WDTCONbits.WDTPS = WATCHDOG_SLEEP_128ms;
     WDTCONbits.SWDTEN = 1;
     INTCON = 0;                         /* Disable all interrupts */
     INTCONbits.GIE = 1;     
@@ -251,8 +247,8 @@ static void initializePIC(void)
 
 void registerConfig(void) 
 {
-    unsigned char writeByte;
-    unsigned short i;
+    uint8_t writeByte;
+    uint16_t i;
 
     // Reset radio
     trxCmdStrobe(CC1120_SRES);
@@ -272,7 +268,7 @@ extern void sendAck(void)
 {
     CLRWDT();
     // Initialize packet buffer of size PKTLEN + 1
-    unsigned char txBuffer[1] = {0};
+    uint8_t txBuffer[1] = {0};
     
     // Calibrate radio according to errata
     manualCalibration();
@@ -300,13 +296,13 @@ extern void sendAck(void)
 
 void successLED(void)
 {
-    G_LED = 1;
+    G_LED_ON;
     CLRWDT();
     __delay_ms(100);
     CLRWDT();
     __delay_ms(100);
     CLRWDT();
-    G_LED = 0;
+    G_LED_OFF;
 }
 
 void check7minTimer() // delete one at a time

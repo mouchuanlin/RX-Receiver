@@ -32,7 +32,7 @@ bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
         CLRWDT();
         receivedSync = false;
         receivedPreamble = false;
-        //R_LED = 1;
+        //R_LED_ON;
         *rxBytes = 6;
         for (uint8_t i = 0 ; i < *rxBytes; i++)
         {
@@ -40,7 +40,7 @@ bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
             rxBuffer++;
         }
         __delay_ms(50);
-        //R_LED = 0;
+        //R_LED_OFF;
         CLRWDT();
         
         for (uint8_t i = 0; i < sizeof(pktBuffer); i++)
@@ -71,7 +71,8 @@ bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
 */
 uint16_t calcCRC(uint8_t crcData, uint16_t crcReg)
 {
-    unsigned int i;
+    uint8_t i;
+    
     for (i = 0; i < 8; i++)
     {
         if ((uint8_t)((crcReg & 0x8000) >> 8) ^ ((uint8_t)(crcData & 0x80)))
@@ -104,7 +105,7 @@ uint16_t calcCRC(uint8_t crcData, uint16_t crcReg)
 *
 *   @return      none
 */
-extern void createAckPacket(unsigned char txBuffer[]) 
+extern void createAckPacket(uint8_t txBuffer[]) 
 {
     txBuffer[0] = 0x06;
 }
@@ -182,11 +183,11 @@ void calibrateRCOsc(void)
 */
 void manualCalibration(void) {
 
-    unsigned char original_fs_cal2;
-    unsigned char calResults_for_vcdac_start_high[3];
-    unsigned char calResults_for_vcdac_start_mid[3];
-    unsigned char marcstate;
-    unsigned char writeByte;
+    uint8_t original_fs_cal2;
+    uint8_t calResults_for_vcdac_start_high[3];
+    uint8_t calResults_for_vcdac_start_mid[3];
+    uint8_t marcstate;
+    uint8_t writeByte;
 
     // 1) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
     writeByte = 0x00;
@@ -194,7 +195,7 @@ void manualCalibration(void) {
 
     // 2) Start with high VCDAC (original VCDAC_START + 2):
     cc1120SpiReadReg(CC1120_FS_CAL2, &original_fs_cal2, 1);
-    writeByte = (unsigned char)(original_fs_cal2 + VCDAC_START_OFFSET);
+    writeByte = (uint8_t)(original_fs_cal2 + VCDAC_START_OFFSET);
     cc1120SpiWriteReg(CC1120_FS_CAL2, &writeByte, 1);
 
     // 3) Calibrate and wait for calibration to be done

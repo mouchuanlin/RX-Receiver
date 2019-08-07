@@ -240,8 +240,8 @@
  * TYPEDEFS
  */
 typedef struct regSetting{
-  unsigned short  addr;
-  unsigned char   data;
+  uint16_t  addr;
+  uint8_t   data;
 }registerSetting_t;
 
 

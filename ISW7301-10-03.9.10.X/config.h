@@ -36,6 +36,31 @@
 #define SDO_PIN     TRISC7
 //#define JUMPER    RC4
 
+// From PIC16 datasheet
+//    REGISTER 10-1: WDTCON: WATCHDOG TIMER CONTROL REGISTER
+//    bit 5-1 WDTPS<4:0>: Watchdog Timer Period Select bits(1)
+//    Bit Value = Prescale Rate
+//    00000 = 1:32 (Interval 1 ms nominal)
+//    00001 = 1:64 (Interval 2 ms nominal)
+//    00010 = 1:128 (Interval 4 ms nominal)
+//    00011 = 1:256 (Interval 8 ms nominal)
+//    00100 = 1:512 (Interval 16 ms nominal)
+//    00101 = 1:1024 (Interval 32 ms nominal)
+//    00110 = 1:2048 (Interval 64 ms nominal)
+//    00111 = 1:4096 (Interval 128 ms nominal)
+//    01000 = 1:8192 (Interval 256 ms nominal)
+//    01001 = 1:16384 (Interval 512 ms nominal)
+//    01010 = 1:32768 (Interval 1s nominal)
+//    01011 = 1:65536 (Interval 2s nominal) (Reset value)
+//    01100 = 1:131072 (217) (Interval 4s nominal)
+//    01101 = 1:262144 (218) (Interval 8s nominal)
+//    01110 = 1:524288 (219) (Interval 16s nominal)
+//    01111 = 1:1048576 (220) (Interval 32s nominal)
+//    10000 = 1:2097152 (221) (Interval 64s nominal)
+//    10001 = 1:4194304 (222) (Interval 128s nominal)
+//    10010 = 1:8388608 (223) (Interval 256s nominal)
+
+#define WATCHDOG_SLEEP_128ms    0b00111
 #define WATCHDOG_SLEEP_256ms    0b01000
 #define WATCHDOG_SLEEP_512ms    0b01001
 #define WATCHDOG_SLEEP_1S       0b01010
@@ -56,6 +81,11 @@
 #define GPIO2           RB7
 #define CSense_ASSERTED     RC3                 // GPIO0
 
+#define G_LED_OFF	G_LED=0
+#define G_LED_ON	G_LED=1
+#define R_LED_OFF	R_LED=0
+#define R_LED_ON	R_LED=1
+
 #define SMOKE_TYPE      0b1000
 #define FLOOD_TYPE      0b0110
 #define CO_TYPE         0b0010
@@ -74,9 +104,10 @@
 //#define TBD16_TYPE      0b1111
     
 #define MAX_CMDS_STORED 20
-#define _7MIN           1602//801
-#define _4MIN           1876//938
-#define _30S_TICK       14//7           // ticks required for test signal timeout of ~30s.
+#define _7MIN           3281
+#define _4MIN           1876         
+#define _30S_TICK       234         // ticks required for test signal timeout of ~30s.
+#define _1_TICK         1
 
 #define _T1_7S          14
 #define _T1_6S          12
@@ -103,7 +134,6 @@ void enable_serial_int();
 void disable_serial_int();
 void registerConfig(void);
 
-extern unsigned short packetCounter;
 bool _7minTimerOn = false;
 bool alreadyAsserted = false;
 bool rssiTimerDone = false;

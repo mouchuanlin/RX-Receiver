@@ -107,12 +107,13 @@ void cycle_radio()
     }
 }
 
-void check_packet_timer() {
-    // Increment Timer
+void check_packet_timer() 
+{
+    // Increment Timer. 128ms per tick.
     for (uint8_t i = 0; i < endMsgPtr; i++) {
         // Use 30s time-out for demo
         if (msgTmrState[i] == ON || msgTmrState[i] == TEST)
-            msgTmrCnt[i] += _30S_TICK;
+            msgTmrCnt[i] += _1_TICK;
         if (msgTmrCnt[i] >= _4MIN)
             msgTmrState[i] = TIMER_DONE;
     }
@@ -141,8 +142,8 @@ void check_for_packet()
     {
         if (crcOK(rxBuffer, 6))
         {
-            // TODO: TESTIN ONLY. Comment this this out for continuous receiving RF slave data.
-            //if (isUniqueTransmission(rxBuffer))
+            // TODO: TESTIN ONLY. Comment this this out for continuous INT RF hub.
+            if (isUniqueTransmission(rxBuffer))
             {
                 successLED();
                 
