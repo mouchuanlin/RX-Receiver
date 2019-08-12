@@ -111,7 +111,8 @@
 
 #define _T1_7S          14
 #define _T1_6S          12
-#define RSSI_6S         92//46
+// TODO: 5 seconds
+#define RSSI_6S         39  //92//46
 
 #include <stdint.h>
 #include <stdbool.h>

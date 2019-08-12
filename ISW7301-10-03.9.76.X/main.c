@@ -35,8 +35,10 @@
  *                             Removed 4min wait for repeat signals - DEMO PURPOSES.
  * 3.9.6->3.9.7: 16 Jul. 2019; JV. Changed R_LED pulse time to 200ms upon reception of hub ACK
  *                             packet to prevent resetting.
- * 3.9.7->3.9.75: 24 Jul. 2019; JV. Changed manual WOR periodicity to 45 counts of WDT, to
+ * 3.9.7->3.9.75: 24 Jul.2019; JV. Changed manual WOR periodicity to 45 counts of WDT, to
  *                             reduce misses across WDT variances.
+ * 3.9.76: 7/30/2019           DL. Reference to ISW7301-10-03.9.4.X. This seems work just fine.
+ *                             Key thing is the CC1120_SYNC_CFG0 value set to 0x0B.
  */
 
 #include <xc.h>
@@ -58,6 +60,7 @@ static void registerConfig(void);
 static void initializePIC(void);
 static void successLED(void);
 void writePreamble(uint16_t preambleTime);
+void startup_flash();
 
 #define REVISION "A03"
 #define PREAMBLE_TIMESPAN   6000        // WOR periodicity is currently 6s
@@ -70,7 +73,6 @@ volatile unsigned char TempScale;
 volatile bit io_change;
 unsigned short packetCounter = 0;
 bool waitingForPkt = false;
-
 bool toggleLED = false;
 
 void __interrupt isr()
@@ -102,7 +104,6 @@ void __interrupt isr()
         }
     }
     
-    
     /* GPIO0 interrupt */
     if(IOCBFbits.IOCBF7)        // BF7 HERE**
     {
@@ -112,21 +113,18 @@ void __interrupt isr()
     }
 }
 
-
-
 void main(void)
 {
     unsigned char writeByte;
     unsigned char readByte;
+    uint8_t rxBuffer[10] = {0};
+    uint8_t rxBytes, marcStatus, chipState;
+    
     initializePIC();
 
     /* START-UP FLASH */
-    R_LED = 1;
-    G_LED = 1;
-    WDTCONbits.SWDTEN = 0;
-    __delay_ms(500);
-    R_LED = 0;
-    G_LED = 0;
+    startup_flash();
+        
     WDTCONbits.SWDTEN = 1;
     
     initializeSPI();
@@ -144,16 +142,11 @@ void main(void)
     trxCmdStrobe(CC1120_SIDLE);
     while ((trxCmdStrobe(CC1120_SNOP) & 0x70) != 0x00)
         NOP();
+    
     // comment for rssi
     trxCmdStrobe(CC1120_SPWD);
-    
-    uint8_t rxBuffer[10] = {0};
-    uint8_t rxBytes, marcStatus, chipState;
-    
+        
     start_rssi_timer();
-    
-    
-    
     
     /* Inf Loop */
     while(1)
@@ -198,8 +191,6 @@ void main(void)
             start_rssi_timer();
         }
         
-        
-        
         // Increment Timer
         for (uint8_t i = 0; i < endMsgPtr; i++)
         {
@@ -209,8 +200,7 @@ void main(void)
             if (msgTmrCnt[i] >= _4MIN)
                 msgTmrState[i] = TIMER_DONE;
         }
-        
-        
+               
         if (receivedData(rxBuffer, &rxBytes, &marcStatus))
         {
             if(crcOK(rxBuffer, 6) && (rxBuffer[0] != 0x00))
@@ -233,17 +223,33 @@ void main(void)
             INTCONbits.IOCIE = 1;
         }
         
-        
-        
         if (!receivedSync)
         {
             WPUB4 = 1;
-            SLEEP();
-            NOP();
+            
+			SWDTEN = 1;
+			SLEEP();   
+			NOP();
+			NOP();
+			NOP();
+			SWDTEN = 0;
         }
     }
 }
 
+void startup_flash()
+{
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        R_LED = 1;
+        G_LED = 1;
+        WDTCONbits.SWDTEN = 0;
+        __delay_ms(50);
+        R_LED = 0;
+        G_LED = 0;
+        __delay_ms(50);
+    }
+}
 
 static void initializePIC(void)
 {

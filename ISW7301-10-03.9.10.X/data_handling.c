@@ -65,6 +65,7 @@ void cycle_radio()
     // Green LED on every Rx strobe pulse
     // Red LED on at the end of every 6s time the rssi threshold has been met
     if (sixSecondsUp && radioState == DetectRSSI) {
+    //if (sixSecondsUp) {
         sixSecondsUp = false;
         if (rssi_over_threshold()) {
 //            start_rssi_timer();
@@ -143,7 +144,7 @@ void check_for_packet()
         if (crcOK(rxBuffer, 6))
         {
             // TODO: TESTIN ONLY. Comment this this out for continuous INT RF hub.
-            if (isUniqueTransmission(rxBuffer))
+            //if (isUniqueTransmission(rxBuffer))
             {
                 successLED();
                 

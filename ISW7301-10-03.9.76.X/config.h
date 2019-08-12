@@ -80,7 +80,7 @@
 
 #define _T1_7S          14
 #define _T1_6S          12
-#define RSSI_6S         45//46
+#define RSSI_6S         45          //46
 
 #include <stdint.h>
 #include <stdbool.h>

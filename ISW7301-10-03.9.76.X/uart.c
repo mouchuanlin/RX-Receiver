@@ -1,6 +1,7 @@
 
 #include <xc.h>
 #include <stdbool.h>
+#include <string.h>
 #include "config.h"
 #include "uart.h"
 
@@ -137,6 +138,7 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
             if(RS232Buf[1] == rxBuffer[0] && RS232Buf[2] == rxBuffer[1] \
                     && RS232Buf[3] == rxBuffer[2] && RS232Buf[4] == rxBuffer[3])
             {
+//                SWDTEN = 0;
                 R_LED = 1;
                 CLRWDT();
                 __delay_ms(100);
@@ -144,6 +146,11 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
                 __delay_ms(100);
                 CLRWDT();
                 R_LED = 0;
+//                SWDTEN = 1;
+               
+//                memset( RS232Buf,0x00,sizeof(RS232Buf) );
+//                memset( rxBuffer,0x00,sizeof(rxBuffer) );
+
             }
         }
         else

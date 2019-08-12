@@ -340,6 +340,8 @@ bool rssi_over_threshold()
 //        trssi = (~trssi + 1) & 0x0FFF;
             
     return trssi > RSSI_THRESH;
+    
+    //return true;
 }
 
 void start_preamble_timer()

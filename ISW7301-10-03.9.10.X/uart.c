@@ -207,11 +207,11 @@ void write_uart(uint8_t data)
 void flashing_red()
 {
     //WDTCONbits.SWDTEN = 0;
-    for (uint8_t i = 0; i < 10; i++)
+    for (uint8_t i = 0; i < 3; i++)
     {
         R_LED_ON;
         //WDTCONbits.SWDTEN = 0;
-        __delay_ms(10);
+        __delay_ms(1);
         R_LED_OFF;
     }
     //WDTCONbits.SWDTEN = 1;
@@ -220,11 +220,11 @@ void flashing_red()
 void flashing_green()
 {
     //WDTCONbits.SWDTEN = 0;
-    for (uint8_t i = 0; i < 10; i++)
+    for (uint8_t i = 0; i < 3; i++)
     {
         G_LED_ON;
         //WDTCONbits.SWDTEN = 0;
-        __delay_ms(10);
+        __delay_ms(1);
         G_LED_OFF;
     }
     //WDTCONbits.SWDTEN = 1;

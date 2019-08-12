@@ -160,12 +160,13 @@ void main(void)
         
         if (!receivedSync && radioState == DetectRSSI)
         {
-            check_packet_timer();   //4min timer will have to be lowered to compensate 
-                                    // for the instance when this timer is not advanced
-                                    // during other packet reception
-            //WPUB4 = 1;
-            WDTCONbits.SWDTEN = 1;
-            
+            // TODO - 4min timer will have to be lowered to compensate 
+            //          for the instance when this timer is not advanced
+            //          during other packet reception
+            check_packet_timer();   
+
+            flashing_red();
+            WDTCONbits.SWDTEN = 1; 
             CLRWDT();
             SLEEP();
             NOP();
@@ -173,6 +174,8 @@ void main(void)
             NOP();
             
             WDTCONbits.SWDTEN = 0;
+            
+            flashing_green();
             //WPUB4 = 0;
         }
     }

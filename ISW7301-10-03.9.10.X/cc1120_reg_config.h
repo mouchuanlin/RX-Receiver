@@ -274,7 +274,7 @@ const registerSetting_t preferredSettings[]=
   {CC1120_SYMBOL_RATE0,      0x2A},
   {CC1120_AGC_REF,           0xEC},//2E},
   {CC1120_AGC_CS_THR,        0xC0},
-  {CC1120_AGC_GAIN_ADJUST,   0x00},
+  {CC1120_AGC_GAIN_ADJUST,   0x00}, // default 0x00
   {CC1120_AGC_CFG3,          0x91},
   {CC1120_AGC_CFG2,          0x20},
   {CC1120_AGC_CFG1,          0x8A},
@@ -353,7 +353,7 @@ const registerSetting_t preferredSettings[]=
   {CC1120_XOSC1,             0x03},
   {CC1120_ANALOG_SPARE,      0x00},
   {CC1120_PA_CFG3,           0x00},
-  {CC1120_AGC_GAIN2,         0xD1},
+  {CC1120_AGC_GAIN2,         0xD1},     // Default: D1
   {CC1120_AGC_GAIN1,         0x00},
   {CC1120_AGC_GAIN0,         0x3F},
   {CC1120_PARTNUMBER,        0x48},
