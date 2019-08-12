@@ -504,7 +504,7 @@ const registerSetting_t preferredSettings[]=
   {CC1120_SYNC1,             0xC1},
   {CC1120_SYNC0,             0xDE},
   {CC1120_SYNC_CFG1,         0x03},//43},//03},         //01},//0B},
-  {CC1120_SYNC_CFG0,         0x0B},         //0x17 for 32bit sync
+  {CC1120_SYNC_CFG0,         0x17},         //0x17 for 32bit sync
   {CC1120_DEVIATION_M,       0x48},         // 20kHz dev.
   {CC1120_MODCFG_DEV_E,      0x05},         // FSK, 20kHz dev. (exponent)
   {CC1120_DCFILT_CFG,        0x1C},

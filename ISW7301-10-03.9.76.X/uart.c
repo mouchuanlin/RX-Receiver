@@ -139,13 +139,13 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
                     && RS232Buf[3] == rxBuffer[2] && RS232Buf[4] == rxBuffer[3])
             {
 //                SWDTEN = 0;
-                R_LED = 1;
+                R_LED_ON;
                 CLRWDT();
                 __delay_ms(100);
                 CLRWDT();
                 __delay_ms(100);
                 CLRWDT();
-                R_LED = 0;
+                R_LED_OFF;
 //                SWDTEN = 1;
                
 //                memset( RS232Buf,0x00,sizeof(RS232Buf) );
@@ -202,4 +202,30 @@ void write_uart(unsigned char data)
 {
     while (!TRMT);              // Wait for UART TX buffer to empty completely
     TXREG = data;
+}
+
+void flashing_red()
+{
+    //WDTCONbits.SWDTEN = 0;
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        R_LED_ON;
+        //WDTCONbits.SWDTEN = 0;
+        __delay_ms(1);
+        R_LED_OFF;
+    }
+    //WDTCONbits.SWDTEN = 1;
+}
+
+void flashing_green()
+{
+    //WDTCONbits.SWDTEN = 0;
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        G_LED_ON;
+        //WDTCONbits.SWDTEN = 0;
+        __delay_ms(1);
+        G_LED_OFF;
+    }
+    //WDTCONbits.SWDTEN = 1;
 }

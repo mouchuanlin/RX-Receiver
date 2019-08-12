@@ -13,6 +13,11 @@
 #define TXD_IN      TRISC4
 #define GSM_INT     RA2
 
+// The Carriage Return (CR) character (0x0D, \r) moves the cursor to the beginning of the line without advancing to the next line. 
+// The Line Feed (LF) character (0x0A, \n) moves the cursor down to the next line without returning to the beginning of the line.
+#define CR 		0x0D    // \r
+#define LF 		0x0A    // \n
+
 void init_uart();
 void start_uart();
 void construct_uart_packet(uint8_t rxBuffer[], uint8_t numBytes, uint8_t txBuffer[]);

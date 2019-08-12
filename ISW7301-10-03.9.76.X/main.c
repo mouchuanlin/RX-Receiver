@@ -155,6 +155,8 @@ void main(void)
         WPUB4 = 0;
         
         
+        if (_7minTimerOn)
+            check7minTimer();
         
         // comment for RSSI read on every wake-up
         if (rssiTimerStarted)
@@ -227,28 +229,32 @@ void main(void)
         {
             WPUB4 = 1;
             
-			SWDTEN = 1;
+			WDTCONbits.SWDTEN = 1;
 			SLEEP();   
 			NOP();
 			NOP();
 			NOP();
-			SWDTEN = 0;
+			WDTCONbits.SWDTEN = 0;
         }
     }
 }
 
 void startup_flash()
 {
+    WDTCONbits.SWDTEN = 0;
     for (uint8_t i = 0; i < 5; i++)
     {
-        R_LED = 1;
-        G_LED = 1;
+        R_LED_ON;
+        G_LED_ON;
+
         WDTCONbits.SWDTEN = 0;
         __delay_ms(50);
-        R_LED = 0;
-        G_LED = 0;
+        R_LED_OFF;
+        G_LED_OFF; 
+
         __delay_ms(50);
     }
+    WDTCONbits.SWDTEN = 1;
 }
 
 static void initializePIC(void)
@@ -256,10 +262,10 @@ static void initializePIC(void)
     CLRWDT();
     
     // SW control WDT
-    SWDTEN = 0;
+    WDTCONbits.SWDTEN = 0;
     
    // Config WDT interval
-    WDTCONbits.WDTPS = 0b00111;// 128ms    01000;         /* WDT 256ms */
+    WDTCONbits.WDTPS = WATCHDOG_SLEEP_128ms;
     WDTCONbits.SWDTEN = 1;
     INTCON = 0;                         /* Disable all interrupts */
     INTCONbits.GIE = 1;     
@@ -361,13 +367,13 @@ extern void sendAck(void)
 
 static void successLED(void)
 {
-    G_LED = 1;
+    G_LED_ON;
     CLRWDT();
     __delay_ms(100);
     CLRWDT();
     __delay_ms(100);
     CLRWDT();
-    G_LED = 0;
+    G_LED_OFF;
 }
 
 

@@ -27,7 +27,7 @@ extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStat
     {
         CLRWDT();
         receivedSync = false;
-        R_LED = 1;
+        R_LED_ON;
         // Read number of bytes in RX FIFO
         cc1120SpiReadReg(CC1120_NUM_RXBYTES, rxBytes, 1);
         if(rxBytes != 0)
@@ -50,7 +50,7 @@ extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStat
             __delay_ms(10);
         }
         trxCmdStrobe(CC1120_SWOR);
-        R_LED = 0;
+        R_LED_OFF;
         return true;
     }
     else
