@@ -71,7 +71,7 @@ void startup_blinking();
 
 volatile uint8_t TempScale;
 volatile bit io_change;
-unsigned short packetCounter = 0;
+uint16_t packetCounter = 0;
 bool waitingForPkt = false;
 bool toggleLED = false;
 
@@ -85,8 +85,6 @@ void __interrupt isr()
         temp = RCREG;
         RS232Buf[rx_cnt++] = temp;
         
-        PIR1bits.RCIF == 0;
-        
         if(rx_cnt > MAX_SIZE)
             rx_cnt = 0;
         
@@ -97,7 +95,6 @@ void __interrupt isr()
         }
     }
 
-    
     /* GPIO0 interrupt */
     if(IOCBFbits.IOCBF7)        // BF7 HERE**
     {
@@ -109,11 +106,10 @@ void __interrupt isr()
 
 void main(void)
 {
-    uint8_t writeByte;
-    uint8_t readByte;
     uint8_t rxBuffer[10] = {0};
-    uint8_t rxBytes, marcStatus, chipState;
+    uint8_t rxBytes, marcStatus;
     
+    // Init PIC16
     initializePIC();
 
     // Startup LED blinking
@@ -121,6 +117,7 @@ void main(void)
         
     WDTCONbits.SWDTEN = 1;
     
+    // Init SPI
     initializeSPI();
     
     // Write Radio Regs
@@ -152,64 +149,64 @@ void main(void)
             check7minTimer();
         
         // comment for RSSI read on every wake-up
-        if (rssiTimerStarted)
+        if (rssiTimerStarted && (rssiCnt++ >= RSSI_6S))
         {
-            if (rssiCnt++ >= RSSI_6S)
-            {
-                refresh_rssi_timer();
-                sixSecondsUp = true;
-            }
+            refresh_rssi_timer();
+            sixSecondsUp = true;
         }
+        
         // Green LED on every Rx strobe pulse
         // Red LED on at the end of every 6s time the rssi threshold has been met
         if (sixSecondsUp && !waitingForPkt)
         {
-            sixSecondsUp = false;
             if (rssi_over_threshold())
             {
-                start_rssi_timer();
                 waitingForPkt = true;
                 trxCmdStrobe(CC1120_SRX);
             }
             else
                 power_down_radio();
+            
             start_rssi_timer();
         }
         else if (sixSecondsUp && waitingForPkt && !receivedSync)
         {
-            sixSecondsUp = false;
             waitingForPkt = false;
             if (!rssi_over_threshold())
                 power_down_radio();
             else
                 trxCmdStrobe(CC1120_SRX);
+            
             start_rssi_timer();
         }
-        
+           
         // Increment Timer
         for (uint8_t i = 0; i < endMsgPtr; i++)
         {
             // Use 30s time-out for demo
             if (msgTmrState[i] == ON || msgTmrState[i] == TEST)
-                msgTmrCnt[i] += _30S_TICK;
-            if (msgTmrCnt[i] >= _4MIN)
+                msgTmrCnt[i] += _1_TICK;
+            if ((msgTmrState[i] == TEST && msgTmrCnt[i] >= _30S_TICK) ||
+                (msgTmrState[i] == ON && msgTmrCnt[i] >= _4MIN) )
                 msgTmrState[i] = TIMER_DONE;
         }
-               
-        if (receivedData(rxBuffer, &rxBytes, &marcStatus))
-        {
+        
+        if (receivedSync)
+        {                       
+            receivedData(rxBuffer, &rxBytes, &marcStatus);
             if(crcOK(rxBuffer, 6) && (rxBuffer[0] != 0x00))
             {
-                if (isUniqueTransmission(rxBuffer))
+                //if (isUniqueTransmission(rxBuffer))
                 {
                     successLED();
                     INTCONbits.IOCIE = 0;
                     IOCBNbits.IOCBN7 = 0;
-                    sendAck();
+                    //sendAck();
                     tell_mother(rxBuffer, 6);
                 }
             }
-            /* Flush RX FIFO */
+            
+            //Flush RX FIFO
             trxCmdStrobe(CC1120_SFRX);
             __delay_ms(1);
             trxCmdStrobe(CC1120_SPWD);
@@ -221,7 +218,7 @@ void main(void)
         if (!receivedSync)
         {
             WPUB4 = 1;
-            
+
 			WDTCONbits.SWDTEN = 1;
 			SLEEP();   
 			NOP();
@@ -268,8 +265,6 @@ static void initializePIC(void)
     IOCBFbits.IOCBF7 = 0;
     IOCBNbits.IOCBN7 = 1;       // GPIO2
     
-    
-    
     //IOCAP=0b00000010;       /* detect positive edge, RA1:Tx, RA3: switch,RA4: cover sw */
     //IOCAN=0b00100000;     /* detect negative edge, RA5:Prog SW */
 
@@ -279,7 +274,6 @@ static void initializePIC(void)
     
     OSCTUNE = 0;
     OSCCON = 0b01101000;    // External Oscillator 4Mhz 
-    
     
     OPTION_REG = 0b00000111;  // WPU are enabled by individ. WPU latch vals.
     APFCON0 = 0b10000100;   // RC4->USART TX , RC5->USART RX
@@ -310,7 +304,7 @@ static void initializePIC(void)
 static void registerConfig(void) 
 {
     uint8_t writeByte;
-    unsigned short i;
+    uint16_t i;
 
     // Reset radio
     trxCmdStrobe(CC1120_SRES);

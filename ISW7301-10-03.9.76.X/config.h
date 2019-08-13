@@ -104,13 +104,15 @@
 //#define TBD16_TYPE      0b1111
     
 #define MAX_CMDS_STORED 20
-#define _7MIN           801
-#define _4MIN           938
-#define _30S_TICK       7           // ticks required for test signal timeout of ~30s.
+// WDT timer - 128 ms
+#define _7MIN           3281		// 7 min * 60 sec * 1090 ms / 128 ms = 3281
+#define _4MIN           1875		// 4 min * 60 sec * 1000 ms / 128 ms = 1875
+#define _30S_TICK       234			// 30 sec * 1000 ms / 128 ms = 234
+#define _1_TICK         1
 
 #define _T1_7S          14
 #define _T1_6S          12
-#define RSSI_6S         45          //46
+#define RSSI_6S         30      //46			// 6 sec * 1000 ms / 128 ms = 46
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -129,7 +131,7 @@ void refresh_rssi_timer();
 void stop_rssi_timer();
 bool rssi_over_threshold();
 
-extern unsigned short packetCounter;
+extern uint16_t packetCounter;
 bool _7minTimerOn = false;
 bool alreadyAsserted = false;
 bool rssiTimerDone = false;

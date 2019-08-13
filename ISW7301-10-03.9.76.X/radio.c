@@ -25,10 +25,10 @@ uint16_t RSSI_THRESH = 0x0190;
 uint32_t RSSI_NTHRESH = 0x06D0;//700
 
 
-extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
+bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
 {
-    if(receivedSync)
-    {
+//    if(receivedSync)
+//    {
         CLRWDT();
         receivedSync = false;
         R_LED_ON;
@@ -56,9 +56,9 @@ extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStat
         trxCmdStrobe(CC1120_SWOR);
         R_LED_OFF;
         return true;
-    }
-    else
-        return false;
+//    }
+//    else
+//        return false;
 }
 
 
@@ -269,53 +269,24 @@ void manualCalibration(void) {
     }
 }
 
-
-/* 7s timer to reset WOR as needed*/
+// 6 seconds RSSI timer
 void start_rssi_timer()
 {
-//    OPTION_REGbits.T0CS = 1;
-//    OPTION_REGbits.TMR0SE = 0;
-//    OPTION_REGbits.PSA = 1; // no pre-scale for now
-//    INTCONbits.TMR0IE = 1;
-//    INTCONbits.GIE = 1;
     rssiCnt = 0;
-    
-    
-//    t1cnt = 0;
-//    T1CON = 0b00000000;
-//    // 500ms; 12 counts of this yields 6s
-//    TMR1L = 0x00;//DB;
-//    TMR1H = 0xFF;//0B;
-//    T1CONbits.TMR1ON = 1;
-//    PIE1bits.TMR1IE = 1;
-//    PIR1bits.TMR1IF = 0;
-//    
-//    INTCONbits.PEIE = 1;
-//    INTCONbits.GIE = 1;
     rssiTimerStarted = true;
+    sixSecondsUp = false;
 }
 
 void refresh_rssi_timer()
 {
     rssiCnt = 0;
-//    TMR1L = 0x00;//DB;
-//    TMR1H = 0xFF;//0B;
-//    T1CONbits.TMR1ON = 1;
-//    PIE1bits.TMR1IE = 1;
-//    PIR1bits.TMR1IF = 0;
-//    INTCONbits.PEIE = 1;
-//    INTCONbits.GIE = 1;
 }
 
 void stop_rssi_timer()
 {
-//    T1CONbits.TMR1ON = 0;
-//    PIE1bits.TMR1IE = 0;
-//    t1cnt = 0;
     rssiCnt = 0;
     rssiTimerStarted = false;
 }
-
 
 bool rssi_over_threshold()
 {
@@ -361,7 +332,6 @@ bool rssi_over_threshold()
             
     return trssi > RSSI_THRESH;
 }
-
 
 void power_down_radio()
 {
