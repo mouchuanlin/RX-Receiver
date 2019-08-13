@@ -223,9 +223,9 @@ void trxReadWriteBurstSingle(uint8_t addr, uint8_t *data, uint8_t len)
  *
  * @return      rfStatus_t
  */
-rfStatus_t cc1120SpiWriteTxFifo(unsigned char *pData, unsigned char len)
+rfStatus_t cc1120SpiWriteTxFifo(uint8_t *pData, uint8_t len)
 {
-  unsigned char rc;
+  uint8_t rc;
   rc = trx8BitRegAccess(0x00, CC1120_BURST_TXFIFO, pData, len);
 //  cc1120SpiWriteReg(CC1120_BURST_TXFIFO, pData, len);
   return (rc);

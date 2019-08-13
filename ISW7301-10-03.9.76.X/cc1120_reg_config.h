@@ -240,9 +240,9 @@
  * TYPEDEFS
  */
 typedef struct regSetting{
-  unsigned short  addr;
-  unsigned char   data;
-}registerSetting_t;
+  uint16_t  addr;
+  uint8_t   data;
+} registerSetting_t;
 
 
 // Carrier frequency = 906.000000

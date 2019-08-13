@@ -60,7 +60,7 @@ static void registerConfig(void);
 static void initializePIC(void);
 static void successLED(void);
 void writePreamble(uint16_t preambleTime);
-void startup_flash();
+void startup_blinking();
 
 #define REVISION "A03"
 #define PREAMBLE_TIMESPAN   6000        // WOR periodicity is currently 6s
@@ -69,40 +69,34 @@ void startup_flash();
  * VARIABLES
  */
 
-volatile unsigned char TempScale;
+volatile uint8_t TempScale;
 volatile bit io_change;
 unsigned short packetCounter = 0;
 bool waitingForPkt = false;
 bool toggleLED = false;
 
 void __interrupt isr()
-{
-    if (PIR1bits.RCIF)
+{   
+    uint8_t temp;
+    
+    // ACK from hub - 7 bytes data in HEX - '$' + 3byte ID + 1byte status + <CR> + <LF>
+    if (!receivedACK && PIR1bits.RCIF)
     {
-        PIR1bits.RCIF = 0;
+        temp = RCREG;
+        RS232Buf[rx_cnt++] = temp;
         
-        if (pos == 0 && RCREG == '$' && !haveHeader)
+        PIR1bits.RCIF == 0;
+        
+        if(rx_cnt > MAX_SIZE)
+            rx_cnt = 0;
+        
+        if (temp == LF)
         {
-            haveHeader = true;
-            RS232Buf[0] = RCREG;
-            pos ++;
-        }
-        else if (haveHeader)
-        {
-            RS232Buf[pos] = RCREG;
-            if (RS232Buf[pos] == '\r')
-                receivedCR = true;
-            else if (RS232Buf[pos] == '\n')
-                receivedLF = true;
-            
-            pos++;
-            if (pos >= 11)
-            {
-                pos = 0;
-                haveHeader = false;
-            }
+            rx_cnt = 0;
+            receivedACK = true;
         }
     }
+
     
     /* GPIO0 interrupt */
     if(IOCBFbits.IOCBF7)        // BF7 HERE**
@@ -115,28 +109,28 @@ void __interrupt isr()
 
 void main(void)
 {
-    unsigned char writeByte;
-    unsigned char readByte;
+    uint8_t writeByte;
+    uint8_t readByte;
     uint8_t rxBuffer[10] = {0};
     uint8_t rxBytes, marcStatus, chipState;
     
     initializePIC();
 
-    /* START-UP FLASH */
-    startup_flash();
+    // Startup LED blinking
+    startup_blinking();
         
     WDTCONbits.SWDTEN = 1;
     
     initializeSPI();
     
-    /* Write Radio Regs */
+    // Write Radio Regs
     registerConfig();
     
-    /* Calibrate */
+    // Calibrate
     manualCalibration();
     calibrateRCOsc();
     
-    /* Flush RX FIFO */
+    // Flush RX FIFO
     trxCmdStrobe(CC1120_SFRX);
     __delay_ms(1);
     trxCmdStrobe(CC1120_SIDLE);
@@ -153,7 +147,6 @@ void main(void)
     {
         CLRWDT();
         WPUB4 = 0;
-        
         
         if (_7minTimerOn)
             check7minTimer();
@@ -239,7 +232,7 @@ void main(void)
     }
 }
 
-void startup_flash()
+void startup_blinking()
 {
     WDTCONbits.SWDTEN = 0;
     for (uint8_t i = 0; i < 5; i++)
@@ -316,7 +309,7 @@ static void initializePIC(void)
 
 static void registerConfig(void) 
 {
-    unsigned char writeByte;
+    uint8_t writeByte;
     unsigned short i;
 
     // Reset radio
@@ -338,7 +331,7 @@ extern void sendAck(void)
 {
     CLRWDT();
     // Initialize packet buffer of size PKTLEN + 1
-    unsigned char txBuffer[1] = {0};
+    uint8_t txBuffer[1] = {0};
     
     // Calibrate radio according to errata
     manualCalibration();

@@ -1,3 +1,6 @@
+//
+// uart.c
+//
 
 #include <xc.h>
 #include <stdbool.h>
@@ -39,10 +42,6 @@ void start_uart()
 
 void enable_RX_uart_interrupt()
 {
-    uartRxIsFull = false;
-    haveHeader = false;
-    receivedCR = false;
-    receivedLF = false;
     intconSaveBits = INTCON;
 //    PEIE = 1;
     pirSaveBits = PIR1;
@@ -52,6 +51,7 @@ void enable_RX_uart_interrupt()
     INTCONbits.PEIE = 1;
     GIE = 1;
 }
+
 void disable_RX_uart_interrupt()
 {
     RCIE = 0;
@@ -68,9 +68,10 @@ void terminate_uart()
     WDTCONbits.SWDTEN = 1;
 }
 
-void construct_uart_packet(uint8_t rxBuffer[], uint8_t numBytes, unsigned char txBuffer[])
+void construct_uart_packet(uint8_t rxBuffer[], uint8_t numBytes, uint8_t txBuffer[])
 {
     /* For adapting to current hub software with two chips */
+    // Alert message to hub - 7 bytes data in HEX - '$' + 3byte ID + 1byte status + <CR> + <LF>
     txBuffer[0] = '$';
     /* Write serial ID as-is to output buffer */
     for(uint8_t i = 0; i < 4; i ++)
@@ -79,12 +80,13 @@ void construct_uart_packet(uint8_t rxBuffer[], uint8_t numBytes, unsigned char t
 //    txBuffer[9] = rxBuffer[4];              // e.g. high byte of CRC
 //    txBuffer[10] = rxBuffer[5];             // e.g. low byte of CRC
     
-    txBuffer[5] = '\r';                     // to accommodate current hub
-    txBuffer[6] = '\n';                     // to accommodate current hub
+    txBuffer[5] = CR;                     	// to accommodate current hub
+    txBuffer[6] = LF;                     	// to accommodate current hub
 }
 
 void wakeup_GSM_and_send_header(uint8_t headerByte)
 {
+	// INT hub for 1 second
     GSM_INT = 1;
     for (uint8_t i = 0; i < 10; i++)        // 1s
     {
@@ -107,65 +109,53 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
     init_uart();
     construct_uart_packet(rxBuffer, numBytes, txBuffer);
     start_uart();
-    //    for (uint8_t i = 0; i < repeatUART; i ++)
-
-    while (i++ < repeatUART && !(receivedCR && receivedLF))
-    {
+    
+    while ((i++ < repeatUART) && !receivedACK)
+    {     
         wakeup_GSM_and_send_header(txBuffer[0]);
-        for (uint8_t j = 1; j < sizeof(txBuffer); j ++)
-        {    write_uart(txBuffer[j]);   }
+        for (uint8_t j = 1; j < sizeof(txBuffer); j ++) 
+		        write_uart(txBuffer[j]);   
+        
         
         enable_RX_uart_interrupt();
-        uartRxIsFull = false;
         counter = 0;                        // Clear timer
         
-        while(!uartRxIsFull && (counter <= _3s))
+        while(counter <= _3s)
         {
             /* Split up because interrupt cannot occur from within delay() */
             CLRWDT();
             __delay_ms(1);
             counter++;
-            if (receivedCR && receivedLF)
-                uartRxIsFull = true;
+            
+            // ACk flag set in isr() - ACK from hub - 7 bytes data in HEX - '$' + 3byte ID + 1byte status + <CR> + <LF> 
+            if (receivedACK)
+                break;
         }
+
         
         disable_RX_uart_interrupt();
         
-        if (receivedCR && receivedLF)
+        if (receivedACK && check_ACK_data(rxBuffer))
         {
-            haveHeader = false;
-            pos = 0;
-            if(RS232Buf[1] == rxBuffer[0] && RS232Buf[2] == rxBuffer[1] \
-                    && RS232Buf[3] == rxBuffer[2] && RS232Buf[4] == rxBuffer[3])
-            {
-//                SWDTEN = 0;
-                R_LED_ON;
-                CLRWDT();
-                __delay_ms(100);
-                CLRWDT();
-                __delay_ms(100);
-                CLRWDT();
-                R_LED_OFF;
-//                SWDTEN = 1;
-               
-//                memset( RS232Buf,0x00,sizeof(RS232Buf) );
-//                memset( rxBuffer,0x00,sizeof(rxBuffer) );
-
-            }
+            R_LED_ON;       
+            CLRWDT();
+            __delay_ms(100);
+            CLRWDT();
+            __delay_ms(100);
+            CLRWDT();                
+            R_LED_OFF;
         }
         else
         {
             /* Toggle USART receiver */
-            pos = 0;
             CREN = 0;
             __delay_us(20);
             CREN = 1;
         }
     }
-    if (receivedCR && receivedLF)         // if received UART, start timer and increment to next valid pkt spot in receivedMsg array; if not, repeat on reception of next pkt.
+	
+    if (receivedACK)         // if received UART, start timer and increment to next valid pkt spot in receivedMsg array; if not, repeat on reception of next pkt.
     {
-        receivedCR = false;
-        receivedLF = false;
         if (testMatch)
             msgTmrState[endMsgPtr] = TEST;
         else
@@ -194,13 +184,29 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
 //            endMsgPtr--;
     }
     
+    receivedACK = false;
     terminate_uart();
 }
 
+bool check_ACK_data(uint8_t rxBuffer[])
+{    
+    // 7 bytes data in HEX - $ + 3byte ID + 1byte status + <CR> + <LF>  
+    if ((RS232Buf[0] == '$') && (RS232Buf[5] == CR) && (RS232Buf[6] == LF) &&
+            (RS232Buf[1] == rxBuffer[0]) && 
+            (RS232Buf[2] == rxBuffer[1]) &&
+            (RS232Buf[3] == rxBuffer[2]) && 
+            (RS232Buf[4] == rxBuffer[3]))
+        return true;
+    else
+        return false;
+}
 
-void write_uart(unsigned char data)
+void write_uart(uint8_t data)
 {
-    while (!TRMT);              // Wait for UART TX buffer to empty completely
+    // Wait for UART TX buffer to empty completely
+    while (!TRMT)
+        ;         
+    
     TXREG = data;
 }
 

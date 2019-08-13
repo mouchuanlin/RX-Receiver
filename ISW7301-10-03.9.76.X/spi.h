@@ -37,7 +37,7 @@
 /*****************************************************
  * TYPEDEFS
  ****************************************************/
-typedef unsigned char rfStatus_t;
+typedef uint8_t rfStatus_t;
 
 
 /*****************************************************
@@ -47,7 +47,7 @@ rfStatus_t cc1120SpiWriteReg(uint16_t addr, uint8_t *data, uint8_t len);
 rfStatus_t cc1120SpiReadReg(uint16_t addr, uint8_t *data, uint8_t len);
 rfStatus_t trx8BitRegAccess(uint8_t accessType, uint8_t addrByte, uint8_t *pData, uint8_t len);
 rfStatus_t trx16BitRegAccess(uint8_t accessType, uint8_t extAddr, uint8_t regAddr, uint8_t *data, uint8_t len);
-rfStatus_t cc1120SpiWriteTxFifo(unsigned char *pData, unsigned char len);
+rfStatus_t cc1120SpiWriteTxFifo(uint8_t *pData, uint8_t len);
 rfStatus_t cc1120SpiReadRxFifo(uint8_t *pData, uint8_t len);
 rfStatus_t cc1120GetTxStatus(void);
 rfStatus_t trxCmdStrobe(uint8_t cmd);
@@ -55,7 +55,7 @@ rfStatus_t trxCmdStrobe(uint8_t cmd);
 uint16_t calcCRC(uint8_t crcData, uint16_t crcReg);
 uint8_t SPISend(uint8_t data);
 void trxReadWriteBurstSingle(uint8_t addr, uint8_t *data, uint8_t len);
-extern void createAckPacket(unsigned char txBuffer[]);
+extern void createAckPacket(uint8_t txBuffer[]);
 extern void runTX(void);
 extern bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus);
 void initializeSPI();
