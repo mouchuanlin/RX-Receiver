@@ -30,19 +30,16 @@ bool isUniqueTransmission(uint8_t *receiveBuf)
 {
     uint8_t j = 0, i = 0;
     uint32_t temp = *receiveBuf++;
-    temp <<= 8;
-    temp |= *receiveBuf++;
-    temp <<= 8;
-    temp |= *receiveBuf++;
-    temp <<= 8;
-    temp |= *receiveBuf++;
     bool msgMatches = false;
     
-    // check if it's a test
-    test1 = temp & 0x04;
-    testMatch = (bool)(test1 == 0x04);
-    
-    while (!msgMatches && i < endMsgPtr)     // parse all messages already received in buffer, exit if no match
+    temp <<= 8;
+    temp |= *receiveBuf++;
+    temp <<= 8;
+    temp |= *receiveBuf++;
+    temp <<= 8;
+    temp |= *receiveBuf++;
+
+    while (!msgMatches && i < endMsgPtr) // parse all messages already received in buffer, exit if no match
     {
         msgMatches |= (bool)(temp == msgReceived[i++]);
     }

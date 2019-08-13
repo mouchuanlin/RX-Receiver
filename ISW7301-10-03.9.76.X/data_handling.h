@@ -15,6 +15,7 @@
 bool crcOK(uint8_t rxBuffer[], uint8_t payloadLength);
 bool isUniqueTransmission(uint8_t *receiveBuf);
 void sendAck();
+bool get_test_mode(uint8_t *receiveBuf);
 
 bool receivedSync = false;
 

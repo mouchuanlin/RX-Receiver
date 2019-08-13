@@ -28,7 +28,8 @@ void enable_RX_uart_interrupt();
 void write_uart(uint8_t data);
 void flashing_red();
 void flashing_green();
-bool check_ACK_data(uint8_t rxBuffer[]);
+bool check_ACK_data(uint8_t rxBuffer[]);;
+bool get_test_mode(uint8_t *receiveBuf); 
 
 #define MAX_SIZE 7
 volatile bool receivedACK = false;

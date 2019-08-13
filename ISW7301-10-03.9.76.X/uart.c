@@ -156,6 +156,9 @@ void tell_mother(uint8_t rxBuffer[], uint8_t numBytes)
 	
     if (receivedACK)         // if received UART, start timer and increment to next valid pkt spot in receivedMsg array; if not, repeat on reception of next pkt.
     {
+        // Is this a TEST message?
+        testMatch = get_test_mode(rxBuffer);
+            
         if (testMatch)
             msgTmrState[endMsgPtr] = TEST;
         else
@@ -234,4 +237,12 @@ void flashing_green()
         G_LED_OFF;
     }
     //WDTCONbits.SWDTEN = 1;
+}
+
+bool get_test_mode(uint8_t *receiveBuf) 
+{    
+    // receieBuf is 3 bytes ID + 1 byte TYPE 
+    //  - In flood sensor TEST case (TEST jumper on), the receiveBuf[] will be 62 72 75 04
+    
+    return (bool) (receiveBuf[3] == 0x04);
 }

@@ -9,7 +9,7 @@
 #include <pic16lf1829.h>
 #include "config.h"
 #include "cc1120_reg_config.h"
-#include "handle_data.h"
+#include "data_handling.h"
 #include "spi.h"
 
 #define CRC_ENABLE          TRUE

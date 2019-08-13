@@ -6,9 +6,9 @@
                    projectFiles="true">
       <itemPath>cc1120_reg_config.h</itemPath>
       <itemPath>config.h</itemPath>
-      <itemPath>handle_data.h</itemPath>
       <itemPath>spi.h</itemPath>
       <itemPath>uart.h</itemPath>
+      <itemPath>data_handling.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -29,6 +29,9 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
   </logicalFolder>
+  <sourceRootList>
+    <Elem>.</Elem>
+  </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="default" type="2">
