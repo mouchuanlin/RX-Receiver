@@ -112,6 +112,8 @@
 
 #define _T1_7S          14
 #define _T1_6S          12
+
+// TODO: using 30 instead of 46. This is the only value can get RF slave continuous msg every 7.1 seconds.
 #define RSSI_6S         30      //46			// 6 sec * 1000 ms / 128 ms = 46
 
 #include <stdint.h>

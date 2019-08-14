@@ -41,39 +41,18 @@
  *                             Key thing is the CC1120_SYNC_CFG0 value set to 0x0B.
  */
 
+#include "main.h"
+
 #include <xc.h>
-//#include <htc.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <math.h>
 #include <pic16lf1829.h>
 #include "config.h"
+
 #include "cc1120_reg_config.h"
 #include "data_handling.h"
 #include "uart.h"
 #include "spi.h"
 
-/******************************
- * STATIC FUNCTIONS
- */
-static void registerConfig(void);
-static void initializePIC(void);
-static void successLED(void);
-void writePreamble(uint16_t preambleTime);
-void startup_blinking();
-
-#define REVISION "A03"
-#define PREAMBLE_TIMESPAN   6000        // WOR periodicity is currently 6s
-
-/******************************************************************************
- * VARIABLES
- */
-
-volatile uint8_t TempScale;
-volatile bit io_change;
-uint16_t packetCounter = 0;
-bool waitingForPkt = false;
-bool toggleLED = false;
 
 void __interrupt isr()
 {   
@@ -105,10 +84,7 @@ void __interrupt isr()
 }
 
 void main(void)
-{
-    uint8_t rxBuffer[10] = {0};
-    uint8_t rxBytes, marcStatus;
-    
+{    
     // Init PIC16
     initializePIC();
 
@@ -149,83 +125,20 @@ void main(void)
             check7minTimer();
         
         // comment for RSSI read on every wake-up
-        if (rssiTimerStarted && (rssiCnt++ >= RSSI_6S))
-        {
-            refresh_rssi_timer();
-            sixSecondsUp = true;
-        }
+        check_rssi_6s_timer();
         
         // Green LED on every Rx strobe pulse
         // Red LED on at the end of every 6s time the rssi threshold has been met
-        if (sixSecondsUp && !waitingForPkt)
-        {
-            if (rssi_over_threshold())
-            {
-                waitingForPkt = true;
-                trxCmdStrobe(CC1120_SRX);
-            }
-            else
-                power_down_radio();
-            
-            start_rssi_timer();
-        }
-        else if (sixSecondsUp && waitingForPkt && !receivedSync)
-        {
-            waitingForPkt = false;
-            if (!rssi_over_threshold())
-                power_down_radio();
-            else
-                trxCmdStrobe(CC1120_SRX);
-            
-            start_rssi_timer();
-        }
+        check_rssi();
            
         // Increment Timer
-        for (uint8_t i = 0; i < endMsgPtr; i++)
-        {
-            // Use 30s time-out for demo
-            if (msgTmrState[i] == ON || msgTmrState[i] == TEST)
-                msgTmrCnt[i] += _1_TICK;
-            if ((msgTmrState[i] == TEST && msgTmrCnt[i] >= _30S_TICK) ||
-                (msgTmrState[i] == ON && msgTmrCnt[i] >= _4MIN) )
-                msgTmrState[i] = TIMER_DONE;
-        }
+        check_unique_msg_timer();
         
-        if (receivedSync)
-        {                       
-            receivedData(rxBuffer, &rxBytes, &marcStatus);
-            if(crcOK(rxBuffer, 6) && (rxBuffer[0] != 0x00))
-            {
-                //if (isUniqueTransmission(rxBuffer))
-                {
-                    successLED();
-                    INTCONbits.IOCIE = 0;
-                    IOCBNbits.IOCBN7 = 0;
-                    //sendAck();
-                    tell_mother(rxBuffer, 6);
-                }
-            }
-            
-            //Flush RX FIFO
-            trxCmdStrobe(CC1120_SFRX);
-            __delay_ms(1);
-            trxCmdStrobe(CC1120_SPWD);
-            start_rssi_timer();
-            IOCBNbits.IOCBN7 = 1;
-            INTCONbits.IOCIE = 1;
-        }
-        
-        if (!receivedSync)
-        {
-            WPUB4 = 1;
-
-			WDTCONbits.SWDTEN = 1;
-			SLEEP();   
-			NOP();
-			NOP();
-			NOP();
-			WDTCONbits.SWDTEN = 0;
-        }
+        // Received SYNC from ISR
+        if (receivedSync)                  
+            process_RF_data();
+        else
+            enter_sleep();
     }
 }
 
@@ -300,7 +213,6 @@ static void initializePIC(void)
     start_uart();
 }
 
-
 static void registerConfig(void) 
 {
     uint8_t writeByte;
@@ -320,8 +232,7 @@ static void registerConfig(void)
     }
 }
 
-
-extern void sendAck(void)
+ void sendAck(void)
 {
     CLRWDT();
     // Initialize packet buffer of size PKTLEN + 1
@@ -351,7 +262,6 @@ extern void sendAck(void)
     CLRWDT();
 }
 
-
 static void successLED(void)
 {
     G_LED_ON;
@@ -363,11 +273,11 @@ static void successLED(void)
     G_LED_OFF;
 }
 
-
 void check7minTimer() // delete one at a time
 {
     uint8_t deleteIndex = 0xFF, i = 0;
     bool allTimersOff = true;
+    
     while ((deleteIndex == 0xFF) && (i < endMsgPtr))
     {
         if (msgTmrState[i] == TIMER_DONE)
@@ -399,4 +309,91 @@ void check7minTimer() // delete one at a time
         msgReceived[(uint8_t)(endMsgPtr - 1)] = OFF;     // Make sure final index is defined explicitly
         endMsgPtr--;
     }
+}
+
+void check_rssi_6s_timer()
+{
+    if (rssiTimerStarted && (rssiCnt++ >= RSSI_6S))
+    {
+        refresh_rssi_timer();
+        sixSecondsUp = true;
+    }    
+}
+
+void check_unique_msg_timer()
+{
+    for (uint8_t i = 0; i < endMsgPtr; i++)
+    {
+        // Use 30s time-out for demo
+        if (msgTmrState[i] == ON || msgTmrState[i] == TEST)
+            msgTmrCnt[i] += _1_TICK;
+        if ((msgTmrState[i] == TEST && msgTmrCnt[i] >= _30S_TICK) ||
+            (msgTmrState[i] == ON && msgTmrCnt[i] >= _4MIN) )
+            msgTmrState[i] = TIMER_DONE;
+    }    
+}
+
+void process_RF_data()
+{
+    uint8_t rxBuffer[10] = {0};
+    uint8_t rxBytes, marcStatus;
+    
+    receivedData(rxBuffer, &rxBytes, &marcStatus);
+    if(crcOK(rxBuffer, 6) && (rxBuffer[0] != 0x00))
+    {
+        // TODO: comment out for range test so we can receive all of msg from RF slave.
+        //if (isUniqueTransmission(rxBuffer))
+        {
+            successLED();
+            INTCONbits.IOCIE = 0;
+            IOCBNbits.IOCBN7 = 0;
+            //sendAck();
+            tell_mother(rxBuffer, 6);
+        }
+    }
+
+    //Flush RX FIFO
+    trxCmdStrobe(CC1120_SFRX);
+    __delay_ms(1);
+    trxCmdStrobe(CC1120_SPWD);
+    start_rssi_timer();
+    IOCBNbits.IOCBN7 = 1;
+    INTCONbits.IOCIE = 1;    
+}
+
+void check_rssi()
+{
+        if (sixSecondsUp && !waitingForPkt)
+        {
+            if (rssi_over_threshold())
+            {
+                waitingForPkt = true;
+                trxCmdStrobe(CC1120_SRX);
+            }
+            else
+                power_down_radio();
+            
+            start_rssi_timer();
+        }
+        else if (sixSecondsUp && waitingForPkt && !receivedSync)
+        {
+            waitingForPkt = false;
+            if (!rssi_over_threshold())
+                power_down_radio();
+            else
+                trxCmdStrobe(CC1120_SRX);
+            
+            start_rssi_timer();
+        }    
+}
+
+void enter_sleep()
+{
+    WPUB4 = 1;
+    WDTCONbits.SWDTEN = 1;
+    SLEEP();   
+    NOP();
+    NOP();
+    NOP();
+    WDTCONbits.SWDTEN = 0;    
 }

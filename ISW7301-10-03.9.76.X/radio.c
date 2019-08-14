@@ -1,64 +1,51 @@
-
 //
 // radio.c
 //
+
+#include "radio.h"
 
 #include <xc.h>
 #include <htc.h>
 #include <stdint.h>
 #include <pic16lf1829.h>
 #include "config.h"
+
 #include "cc1120_reg_config.h"
 #include "data_handling.h"
 #include "spi.h"
 
-#define CRC_ENABLE          TRUE
-#define CRC_INIT            0xFFFF
-#define CRC16_POLY          0x8005
-
-#define VCDAC_START_OFFSET 2
-#define FS_VCO2_INDEX 0
-#define FS_VCO4_INDEX 1
-#define FS_CHP_INDEX 2
-
-uint16_t RSSI_THRESH = 0x0190;
-uint32_t RSSI_NTHRESH = 0x06D0;//700
-
 
 bool receivedData(uint8_t rxBuffer[], uint8_t* rxBytes, uint8_t* marcStatus)
 {
-//    if(receivedSync)
-//    {
-        CLRWDT();
-        receivedSync = false;
-        R_LED_ON;
-        // Read number of bytes in RX FIFO
-        cc1120SpiReadReg(CC1120_NUM_RXBYTES, rxBytes, 1);
-        if(rxBytes != 0)
-        {   
-            // Read MARCState bits to check for RX FIFO err
-            cc1120SpiReadReg(CC1120_MARCSTATE, marcStatus, 1);
-            // if marcStatus returns RX FIFO err
-            if ((*marcStatus & 0x1F) == CC1120_RX_FIFO_ERROR)
-                trxCmdStrobe(CC1120_SFRX);      // Flush RX FIFO
-            else
-            {
-                *rxBytes = 6;
-                // Read all bytes from RX FIFO
-                cc1120SpiReadRxFifo(rxBuffer, *rxBytes);
-                // Flush RX FIFO
-                trxCmdStrobe(CC1120_SFRX);
-            }
-            __delay_ms(20);
-            trxCmdStrobe(CC1120_SWORRST);
-            __delay_ms(10);
+    CLRWDT();
+    receivedSync = false;
+    R_LED_ON;
+
+    // Read number of bytes in RX FIFO
+    cc1120SpiReadReg(CC1120_NUM_RXBYTES, rxBytes, 1);
+    if(rxBytes != 0)
+    {   
+        // Read MARCState bits to check for RX FIFO err
+        cc1120SpiReadReg(CC1120_MARCSTATE, marcStatus, 1);
+        // if marcStatus returns RX FIFO err
+        if ((*marcStatus & 0x1F) == CC1120_RX_FIFO_ERROR)
+            trxCmdStrobe(CC1120_SFRX);      // Flush RX FIFO
+        else
+        {
+            *rxBytes = 6;
+            // Read all bytes from RX FIFO
+            cc1120SpiReadRxFifo(rxBuffer, *rxBytes);
+            // Flush RX FIFO
+            trxCmdStrobe(CC1120_SFRX);
         }
-        trxCmdStrobe(CC1120_SWOR);
-        R_LED_OFF;
-        return true;
-//    }
-//    else
-//        return false;
+        __delay_ms(20);
+        trxCmdStrobe(CC1120_SWORRST);
+        __delay_ms(10);
+    }
+    trxCmdStrobe(CC1120_SWOR);
+    R_LED_OFF;
+
+    return true;
 }
 
 

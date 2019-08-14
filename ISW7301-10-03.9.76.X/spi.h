@@ -8,6 +8,7 @@
 #ifndef SPI_H
 #define	SPI_H
 
+#include <stdint.h>
 #include <stdbool.h>
 
 #define RADIO_BURST_ACCESS   0x40        // Command address byte mask for busrst register access
